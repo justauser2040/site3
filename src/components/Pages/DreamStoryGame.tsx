@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw, Save, Upload, Volume2, VolumeX, Home, Utensils, Dumbbell, Droplets, Bath, Bed, Clock, Heart, Zap, Brain, Moon, Sun, Star, Gamepad2 } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Save, Upload, Volume2, VolumeX, Home, Utensils, Dumbbell, Droplets, Bath, Bed, Clock, Heart, Zap, Brain, Moon, Sun, Star } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 
 interface DreamStoryGameProps {
@@ -60,7 +60,6 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [gameStyle, setGameStyle] = useState<'2d' | 'isometric'>('2d');
-  const [showWelcome, setShowWelcome] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const gameLoopRef = useRef<NodeJS.Timeout>();
 
@@ -139,23 +138,13 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
     }
   ];
 
-  // Verificar se é um novo jogo (sem save)
-  const isNewGame = () => {
-    const savedGame = localStorage.getItem('dream-story-save');
-    return !savedGame;
-  };
-
-  // Inicializar o jogo
   useEffect(() => {
-    // Mostrar boas-vindas apenas para novos jogos
-    if (isNewGame()) {
-      setShowWelcome(true);
-    }
-
-    // Configurar áudio
     if (audioRef.current) {
       audioRef.current.volume = 0.3;
       audioRef.current.loop = true;
+      if (!isMuted) {
+        audioRef.current.play().catch(console.error);
+      }
     }
 
     return () => {
@@ -165,9 +154,9 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
     };
   }, []);
 
-  // Game loop - pausar durante boas-vindas
+  // Game loop
   useEffect(() => {
-    if (isPaused || showWelcome) {
+    if (isPaused) {
       if (gameLoopRef.current) {
         clearInterval(gameLoopRef.current);
       }
@@ -221,15 +210,7 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [isPaused, showWelcome]);
-
-  // Função para iniciar o jogo após boas-vindas
-  const handleStartGame = () => {
-    setShowWelcome(false);
-    if (audioRef.current && !isMuted) {
-      audioRef.current.play().catch(console.error);
-    }
-  };
+  }, [isPaused]);
 
   const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
@@ -283,7 +264,6 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
       try {
         const parsed = JSON.parse(savedGame);
         setGameState(parsed);
-        setShowWelcome(false); // Não mostrar boas-vindas ao carregar
         alert('Jogo carregado com sucesso!');
       } catch (error) {
         alert('Erro ao carregar o jogo!');
@@ -311,7 +291,6 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
         gameSpeed: 1,
         lastSaveTime: Date.now()
       });
-      setShowWelcome(true); // Mostrar boas-vindas ao reiniciar
       setIsPaused(false);
     }
   };
@@ -364,49 +343,6 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
         muted={isMuted}
       />
 
-      {/* Painel de Boas-Vindas */}
-      {showWelcome && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className={`max-w-md w-full mx-4 rounded-2xl p-8 border transition-colors duration-300 ${
-            isDark 
-              ? 'bg-slate-900/95 border-slate-800' 
-              : 'bg-white/95 border-emerald-200 shadow-xl'
-          }`}>
-            <div className="text-center">
-              <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Gamepad2 className="w-10 h-10 text-emerald-400" />
-              </div>
-              
-              <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${
-                isDark ? 'text-white' : 'text-emerald-900'
-              }`}>
-                Bem-vindo ao Dream Story!
-              </h2>
-              
-              <p className={`text-base leading-relaxed mb-4 transition-colors duration-300 ${
-                isDark ? 'text-slate-300' : 'text-emerald-800'
-              }`}>
-                Aqui você vai guiar Alex em uma jornada para buscar o melhor sono e saúde!
-              </p>
-              
-              <p className={`text-base leading-relaxed mb-8 transition-colors duration-300 ${
-                isDark ? 'text-slate-300' : 'text-emerald-800'
-              }`}>
-                Faça boas escolhas e boa sorte!
-              </p>
-              
-              <button
-                onClick={handleStartGame}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 mx-auto"
-              >
-                <Play className="w-5 h-5" />
-                Vamos lá!
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <header className={`sticky top-0 z-40 backdrop-blur-sm border-b transition-colors duration-300 ${
         isDark 
@@ -434,13 +370,10 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsPaused(!isPaused)}
-                disabled={showWelcome}
                 className={`p-2 rounded-lg transition-colors ${
-                  showWelcome 
-                    ? 'opacity-50 cursor-not-allowed'
-                    : isDark 
-                      ? 'bg-slate-800 hover:bg-slate-700 text-white' 
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                  isDark 
+                    ? 'bg-slate-800 hover:bg-slate-700 text-white' 
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
                 }`}
               >
                 {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
@@ -483,13 +416,10 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={saveGame}
-              disabled={showWelcome}
               className={`p-2 rounded-lg transition-colors ${
-                showWelcome 
-                  ? 'opacity-50 cursor-not-allowed'
-                  : isDark 
-                    ? 'bg-slate-800 hover:bg-slate-700 text-white' 
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                isDark 
+                  ? 'bg-slate-800 hover:bg-slate-700 text-white' 
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
               }`}
             >
               <Save className="w-4 h-4" />
@@ -497,13 +427,10 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
             
             <button
               onClick={loadGame}
-              disabled={showWelcome}
               className={`p-2 rounded-lg transition-colors ${
-                showWelcome 
-                  ? 'opacity-50 cursor-not-allowed'
-                  : isDark 
-                    ? 'bg-slate-800 hover:bg-slate-700 text-white' 
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                isDark 
+                  ? 'bg-slate-800 hover:bg-slate-700 text-white' 
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
               }`}
             >
               <Upload className="w-4 h-4" />
@@ -511,13 +438,10 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
             
             <button
               onClick={resetGame}
-              disabled={showWelcome}
               className={`p-2 rounded-lg transition-colors ${
-                showWelcome 
-                  ? 'opacity-50 cursor-not-allowed'
-                  : isDark 
-                    ? 'bg-red-800 hover:bg-red-700 text-white' 
-                    : 'bg-red-200 hover:bg-red-300 text-red-900'
+                isDark 
+                  ? 'bg-red-800 hover:bg-red-700 text-white' 
+                  : 'bg-red-200 hover:bg-red-300 text-red-900'
               }`}
             >
               <RotateCcw className="w-4 h-4" />
@@ -723,11 +647,11 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
             <button
               key={room.id}
               onClick={() => changeRoom(room.id as any)}
-              disabled={!!gameState.currentAction || showWelcome}
+              disabled={!!gameState.currentAction}
               className={`p-3 rounded-lg border transition-all duration-200 ${
                 gameState.currentRoom === room.id
                   ? 'bg-emerald-500/20 border-emerald-500/50'
-                  : gameState.currentAction || showWelcome
+                  : gameState.currentAction
                     ? 'opacity-50 cursor-not-allowed'
                     : isDark
                       ? 'bg-slate-900/50 border-slate-800 hover:bg-slate-800/50'
@@ -799,9 +723,9 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
                 <button
                   key={activity.id}
                   onClick={() => performActivity(activity)}
-                  disabled={!activity.available(gameState) || !!gameState.currentAction || showWelcome}
+                  disabled={!activity.available(gameState) || !!gameState.currentAction}
                   className={`p-3 rounded-lg border transition-all duration-200 text-left ${
-                    activity.available(gameState) && !gameState.currentAction && !showWelcome
+                    activity.available(gameState) && !gameState.currentAction
                       ? isDark
                         ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-white'
                         : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-900'
