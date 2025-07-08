@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Play, Pause, RotateCcw, Save, Upload, Volume2, VolumeX, Home, Utensils, Dumbbell, Droplets, Bath, Bed, Clock, Heart, Zap, Brain, Moon, Sun, Star } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, Save, Upload, Volume2, VolumeX, Home, Utensils, Dumbbell, Droplets, Bath, Bed, Clock, Heart, Zap, Brain, Moon, Sun, Star, Gamepad2 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 
 interface DreamStoryGameProps {
@@ -60,7 +60,7 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [gameStyle, setGameStyle] = useState<'2d' | 'isometric'>('2d');
-  const [showWelcome, setShowWelcome] = useState(true); // Novo estado para controlar boas-vindas
+  const [showWelcome, setShowWelcome] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const gameLoopRef = useRef<NodeJS.Timeout>();
 
@@ -139,7 +139,7 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
     }
   ];
 
-  // Função para verificar se é um novo jogo
+  // Verificar se é um novo jogo (sem save)
   const isNewGame = () => {
     const savedGame = localStorage.getItem('dream-story-save');
     return !savedGame;
@@ -147,17 +147,9 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
 
   // Inicializar o jogo
   useEffect(() => {
-    // Verificar se deve mostrar boas-vindas (apenas para novos jogos)
-    const savedGame = localStorage.getItem('dream-story-save');
-    if (savedGame) {
-      setShowWelcome(false);
-      // Carregar jogo salvo se existir
-      try {
-        const parsed = JSON.parse(savedGame);
-        setGameState(parsed);
-      } catch (error) {
-        console.error('Erro ao carregar jogo salvo:', error);
-      }
+    // Mostrar boas-vindas apenas para novos jogos
+    if (isNewGame()) {
+      setShowWelcome(true);
     }
 
     // Configurar áudio
@@ -173,7 +165,7 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
     };
   }, []);
 
-  // Game loop - só executa se não estiver pausado e não estiver mostrando boas-vindas
+  // Game loop - pausar durante boas-vindas
   useEffect(() => {
     if (isPaused || showWelcome) {
       if (gameLoopRef.current) {
@@ -231,10 +223,9 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
     };
   }, [isPaused, showWelcome]);
 
-  // Função para lidar com o clique em "Vamos lá!"
+  // Função para iniciar o jogo após boas-vindas
   const handleStartGame = () => {
     setShowWelcome(false);
-    // Iniciar música se não estiver tocando
     if (audioRef.current && !isMuted) {
       audioRef.current.play().catch(console.error);
     }
@@ -292,7 +283,7 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
       try {
         const parsed = JSON.parse(savedGame);
         setGameState(parsed);
-        setShowWelcome(false); // Garantir que boas-vindas não apareçam ao carregar
+        setShowWelcome(false); // Não mostrar boas-vindas ao carregar
         alert('Jogo carregado com sucesso!');
       } catch (error) {
         alert('Erro ao carregar o jogo!');
@@ -382,20 +373,17 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
               : 'bg-white/95 border-emerald-200 shadow-xl'
           }`}>
             <div className="text-center">
-              {/* Ícone de boas-vindas */}
               <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Star className="w-10 h-10 text-emerald-400" />
+                <Gamepad2 className="w-10 h-10 text-emerald-400" />
               </div>
               
-              {/* Título */}
               <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${
                 isDark ? 'text-white' : 'text-emerald-900'
               }`}>
                 Bem-vindo ao Dream Story!
               </h2>
               
-              {/* Descrição */}
-              <p className={`text-base leading-relaxed mb-6 transition-colors duration-300 ${
+              <p className={`text-base leading-relaxed mb-4 transition-colors duration-300 ${
                 isDark ? 'text-slate-300' : 'text-emerald-800'
               }`}>
                 Aqui você vai guiar Alex em uma jornada para buscar o melhor sono e saúde!
@@ -407,7 +395,6 @@ const DreamStoryGame: React.FC<DreamStoryGameProps> = ({ onBack }) => {
                 Faça boas escolhas e boa sorte!
               </p>
               
-              {/* Botão Vamos lá! */}
               <button
                 onClick={handleStartGame}
                 className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 mx-auto"
